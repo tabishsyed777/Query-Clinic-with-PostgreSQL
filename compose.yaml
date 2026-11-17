@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clinic
+      POSTGRES_PASSWORD: clinic_local_demo
+      POSTGRES_DB: clinic
+    volumes:
+      - clinic_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinic -d clinic"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  web:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://clinic:clinic_local_demo@db:5432/clinic
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "python clinic.py seed && uvicorn app:app --host 0.0.0.0 --port 8000"]
+volumes:
+  clinic_data:
